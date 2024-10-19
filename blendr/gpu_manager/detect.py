@@ -14,7 +14,12 @@ def detech_gpus():
         gpus = []
         for i in range(device_count):
             handle = nvml.nvmlDeviceGetHandleByIndex(i)
-            name = nvml.nvmlDeviceGetName(handle).decode('utf-8')
+            name = nvml.nvmlDeviceGetName(handle)
+
+            # Check if Python version is 2.x
+            if sys.version_info[0] < 3:
+                name = name.decode('utf-8')  # Decode in Python 2
+                
             memory_info = nvml.nvmlDeviceGetMemoryInfo(handle)
             gpus.append({
                 "id": i,

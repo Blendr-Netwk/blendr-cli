@@ -79,7 +79,13 @@ def listen():
         except Exception as e:
             print(f"An error occurred during task execution: {str(e)}")
                 
-    
+    @sio.on('BMAIN: REWARD')
+    def handle_reward(data):
+        message = data['message']
+        if not message:
+            print("No message provided.")
+            return
+        print(message)
 
     sio.wait()
 

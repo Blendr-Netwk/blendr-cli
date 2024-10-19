@@ -134,12 +134,15 @@ def get_storage_type(path):
 
 def get_storage_info():
     while True:
-        storage_path = input(f"{Fore.GREEN}Enter the storage path where you'd like to allocate space: {Style.RESET_ALL}")
-        if shutil.disk_usage(storage_path):
-            total, used, free = check_disk_space(storage_path)
-            break
-        else:
-            print(f"{Fore.RED}Invalid path. Please enter a valid path.{Style.RESET_ALL}")
+        try:
+            storage_path = input(f"{Fore.GREEN}Enter the storage path where you'd like to allocate space: {Style.RESET_ALL}")
+            if shutil.disk_usage(storage_path):
+                total, used, free = check_disk_space(storage_path)
+                break
+            else:
+                print(f"{Fore.RED}Invalid path. Please enter a valid path.{Style.RESET_ALL}")
+        except Exception as e:
+            print(f"{Fore.RED}Invalid path: {str(e)}{Style.RESET_ALL}")
 
     while True:
         try:
