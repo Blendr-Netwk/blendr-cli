@@ -14,6 +14,7 @@ init(autoreset=True)
 def setup_initial_config():
     print(f"{Fore.CYAN}Welcome to the Initial Setup for Blendr GPU Lending{Style.RESET_ALL}")
     node_name = select_nodename()
+    lend_period = get_lend_period()
     price = get_price()
     port = get_port()
     storage_info = get_storage_info()
@@ -22,7 +23,7 @@ def setup_initial_config():
     network_info = check_network_speed()
     public_ip = get_public_ip()
 
-    save_preferences(node_name, storage_info, gpu_info, cpu_info, network_info,public_ip,price,port)
+    save_preferences(node_name, lend_period, storage_info, gpu_info, cpu_info, network_info,public_ip,price,port)
 
 def select_nodename():
     while True:
@@ -31,6 +32,20 @@ def select_nodename():
             return node_name
         else:
             print(f"{Fore.RED}Invalid input. Please enter a non-empty name.{Style.RESET_ALL}")
+
+def get_lend_period():
+    while True:
+        print(f"{Fore.CYAN}Select the lend period:{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}0: 1 day{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}1: 3 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}2: 5 days{Style.RESET_ALL}")
+        
+        choice = input(f"{Fore.GREEN}Enter your choice (0, 1, 2): {Style.RESET_ALL}")
+        
+        if choice in ['0', '1', '2']:
+            return int(choice)
+        else:
+            print(f"{Fore.RED}Invalid selection. Please enter a valid number.{Style.RESET_ALL}")
 
 def select_gpu():
     try:
@@ -174,7 +189,7 @@ def get_price():
         except ValueError:
             print(f"{Fore.RED}Invalid input. Please enter a numeric value.{Style.RESET_ALL}")
 
-def save_preferences(node_name, storage_info, gpu_info, cpu_info, network_info,public_ip,price,port):
+def save_preferences(node_name, lend_period, storage_info, gpu_info, cpu_info, network_info,public_ip,price,port):
     try:
         config = {
             'node_name': node_name,
@@ -183,6 +198,7 @@ def save_preferences(node_name, storage_info, gpu_info, cpu_info, network_info,p
             'cpu_info': cpu_info,
             'network_info': network_info,
             'public_ip': public_ip,
+            'lend_period': lend_period,
             'price': price,
             'port': port
         }
@@ -207,17 +223,21 @@ def load_config():
     
 def get_public_ip():
     try:
-        response = requests.get('https://api.ipify.org')
-        public_ip = response.text
+        response = requests.get('https://ipinfo.io/ip')
+        public_ip = response.text.strip()
+        print(f"{Fore.BLUE}Public IP: {public_ip}")
         return public_ip
     except requests.RequestException as e:
         print(f"{Fore.RED}Failed to get public IP: {str(e)}{Style.RESET_ALL}")
         return "Unavailable"
 
 def get_port():
-    try:
-        port = float(input(f"{Fore.GREEN}Enter the ssh port for the node: {Style.RESET_ALL}"))
-        return port
-    except requests.RequestException as e:
-        print(f"{Fore.RED}Failed to get Port: {str(e)}{Style.RESET_ALL}")
-        return "22"
+    while True:
+        try:
+            port = float(input(f"{Fore.GREEN}Enter the ssh port for the node: {Style.RESET_ALL}"))
+            return port
+        except ValueError:
+            print(f"{Fore.RED}Invalid input. Port number must be between 1 and 65535.{Style.RESET_ALL}")
+        except requests.RequestException as e:
+            print(f"{Fore.RED}Failed to get Port: {str(e)}{Style.RESET_ALL}")
+            return "22"
