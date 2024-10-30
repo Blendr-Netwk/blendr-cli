@@ -36,14 +36,16 @@ def select_nodename():
 def get_lend_period():
     while True:
         print(f"{Fore.CYAN}Select the lend period:{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}0: 1 day{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}1: 3 days{Style.RESET_ALL}")
-        print(f"{Fore.GREEN}2: 5 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}1: 7 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}2: 30 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}3: 60 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}4: 90 days{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}5: 120 days{Style.RESET_ALL}")
         
-        choice = input(f"{Fore.GREEN}Enter your choice (0, 1, 2): {Style.RESET_ALL}")
+        choice = input(f"{Fore.GREEN}Enter your choice: {Style.RESET_ALL}")
         
-        if choice in ['0', '1', '2']:
-            return int(choice)
+        if choice in ['1', '2', '3', '4', '5']:
+            return choice
         else:
             print(f"{Fore.RED}Invalid selection. Please enter a valid number.{Style.RESET_ALL}")
 
