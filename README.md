@@ -29,7 +29,7 @@ A step-by-step series of examples that tell you how to get a development environ
 Install the package using pip:
 
 ```bash
-pip install blendr-cli
+pip install blendrnetwork-cli
 ```
 
 Verify the installation:
@@ -64,7 +64,7 @@ For those looking to contribute or simply tinker with the CLI tool, here's how t
 Clone the repository:
 
 ```bash
-git clone https://github.com/blendr-network/blendr-cli.git
+git clone https://github.com/Blendr-Netwk/blendr-cli.git
 cd blendr-cli
 ```
 Install dependencies:

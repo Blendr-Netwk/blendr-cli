@@ -32,4 +32,5 @@ tmp
 cache
 blendrenv
 results
+venv/
 
