@@ -46,7 +46,7 @@ def login():
     authenticate.login()
 
 @cli.command()
-def initalsetup():
+def initialsetup():
     """initial setup"""
     setup.setup_initial_config()
 
