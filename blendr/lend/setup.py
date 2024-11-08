@@ -1,6 +1,5 @@
 import subprocess
 
-
 def create_windows_user(username, public_key):
     # Create user
     subprocess.run(["powershell", "-Command", f"New-LocalUser -Name {username} -NoPassword"], check=True)
@@ -17,7 +16,6 @@ def create_windows_user(username, public_key):
     # Set appropriate permissions (example using ICACLS to set permissions)
     subprocess.run(["icacls", authorized_keys_path, "/grant", f"{username}:(R,W)"], check=True)
     
-    
 def revoke_windows_user(username):
     # Disable user account
     subprocess.run(["powershell", "-Command", f"Disable-LocalUser -Name {username}"], check=True)
@@ -25,7 +23,6 @@ def revoke_windows_user(username):
     # Remove SSH keys
     subprocess.run(["powershell", "-Command", f"Remove-Item -Path C:\\Users\\{username}\\.ssh\\authorized_keys"], check=True)
     
-
 def create_linux_user(username, public_key):
     try:
         # Create the user with a restricted shell
@@ -61,7 +58,6 @@ def create_linux_user(username, public_key):
     except subprocess.CalledProcessError as e:
             print(f"Failed to complete setup for {username}: {str(e)}")
             
-
 def revoke_linux_user(username):
     try:
         # Lock the user account

@@ -5,7 +5,6 @@ from blendr.lend.setup import create_linux_user, create_windows_user, revoke_lin
 from blendr.initiate_socket.initiate import sio, connect_to_server
 import platform
 
-    
 def listen():
     """Listen to Server Tasks"""
     token = keyring.get_password("system", "blendr_jwt_token")
@@ -27,7 +26,6 @@ def listen():
     def disconnect():
         print("I'm disconnected!")
     
-  
     # Define event handlers
     @sio.on('BMAIN: NEW_TASK')
     def handle_new_task(data):
@@ -38,7 +36,6 @@ def listen():
             #     # fine_tune(data)
             # except Exception as e:
             #     print(f"An error occurred during task execution: {str(e)}")
-                
     
     @sio.on('BMAIN: LEND_GPU')
     def handle_lending(data):
@@ -59,8 +56,6 @@ def listen():
         except Exception as e:
             print(f"An error occurred during task execution: {str(e)}")
                 
-       
-    
     @sio.on('BMAIN: REVOKE_LENDING')
     def handle_revokeLending(data):
         username = data['username']
@@ -88,8 +83,6 @@ def listen():
         print(message)
 
     sio.wait()
-
-    # Clean up and disconnect
     sio.disconnect()
 
 

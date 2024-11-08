@@ -7,7 +7,6 @@ http_session.verify = False
 sio = socketio.Client(http_session=http_session)
 
 def connect_to_server(server_url, token):
-
     """Connect to the server with a given token."""
     try:
         # print(f"Connecting to the server at {server_url}...")

@@ -18,8 +18,6 @@ __________.__                     .___
         \/          \/     \/      \/      
 """
 
-
-
 @click.group()
 def cli():
     """
@@ -59,8 +57,6 @@ def detech_gpus():
 def listentask():
     """Listen to incoming tasks"""
     listen.listen()
-
-
 
 def main():
     click.echo(Fore.BLUE + Style.BRIGHT + BLENDR_ASCII_ART + Style.RESET_ALL)  

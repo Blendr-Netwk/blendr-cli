@@ -9,7 +9,6 @@ from datasets import load_dataset
 from blendr.initiate_socket.initiate import sio
 from blendr.config.settings import SERVER_URL
 
-
 def fine_tune(task_details):
     try:
         base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'cache')
@@ -107,8 +106,6 @@ def fine_tune(task_details):
         # requests.post(SERVER_URL + 'api/notify-upload', json={'taskId': task_details['id'], 'url': uploaded_url})
 
         sio.emit('BMAIN: logs', {'taskId': task_details['id'], 'message': 'Server notified with the upload link'})
-
-
 
     except Exception as e:
         sio.emit('BMAIN: execute_error', {'message': str(e), 'taskId': task_details['id'],'nodeId': task_details['nodeId']})
