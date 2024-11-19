@@ -1,113 +1,113 @@
-# from ai.data.data_loader import load_data, prepare_data
-# from ai.training.trainer import train
+import pandas as pd
 import os
 import tarfile
 import requests
-from ai.data.cache import setup_local_cache
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
-from datasets import load_dataset
+import numpy as np
+from blendr.ai.models.model import load_model_and_tokenizer
+from blendr.ai.data.data_loader import load_and_preprocess_dataset
+from blendr.ai.training.trainer import train_model
+from blendr.ai.data.cache import upload_file, setup_local_cache
 from blendr.initiate_socket.initiate import sio
 from blendr.config.settings import SERVER_URL
 
-def fine_tune(task_details):
+
+def fine_tune(task):
+    # Load data
+    taskId = task.get("id", {})
+    aiModel = task.get("aiModel", {})
+    model_type = aiModel.get("type")
+
+    training_data = task.get("trainingData", {})
+    training_data_url = training_data.get("trainingDataUrl")
+    validation_data_url = training_data.get("validationDataUrl")
+    training_dataset_url = training_data_url.get("data")
+    validation_dataset_url = validation_data_url.get("data")
+
+    training_parameters = task.get("trainingParameters", {})
+    epochs = training_parameters.get("numEpochs")
+    batch_size = training_parameters.get("batchSize")
+    lr = training_parameters.get("learningRate")
+
     try:
-        base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'cache')
-        results_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'results')
-        save_dir = os.path.join(results_dir, 'saved_model')
+        results_dir = os.path.join(os.path.dirname(
+            __file__), "..", "..", "..", "results")
+        save_dir = os.path.join(results_dir, "saved_model")
 
-        model_cache = setup_local_cache({
-            'model': task_details['aiModel']['url'],
-            'config': task_details['aiModel']['configUrl'],
-            'tokenizer': task_details['aiModel']['otherUrl']['tokenizerConfig'],
-            'vocab': task_details['aiModel']['otherUrl']['vocab'],
-            'special_tokens_map': task_details['aiModel']['otherUrl']['specialTokensMap']
+        if training_dataset_url is None:
+            raise Exception(f"trainingDataUrl is required.")
+
+        if validation_dataset_url is None:
+            raise Exception(f"validationDataUrl is required.")
+
+        # Load model and tokenizer based on task type
+        model, tokenizer = load_model_and_tokenizer(model_type)
+
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Model and tokenizer cache setup and loaded complete'
         })
 
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Model and tokenizer cache setup complete'})
+        # Load and preprocess dataset
+        train_dataset, eval_dataset = load_and_preprocess_dataset(
+            model_type, tokenizer, training_dataset_url, validation_dataset_url)
 
-        # Load tokenizer and model using local paths
-        tokenizer = AutoTokenizer.from_pretrained(base_path)
-        model = AutoModelForSequenceClassification.from_pretrained(base_path)
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Model and tokenizer loaded'})
-
-        # Setup cache and load datasets
-        data_cache = setup_local_cache({
-            'train_data': task_details['trainingData']['trainingDataUrl'],
-            'validation_data': task_details['trainingData']['validationDataUrl']
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Dataset loaded and ready for processing'
         })
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Data cache setup complete'})
 
-        dataset = load_dataset('csv', data_files={
-            'train': data_cache['train_data'],
-            'validation': data_cache['validation_data']
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Trainer initialized, starting training'
         })
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Dataset loaded and ready for processing'})
-
-        # Tokenize the text
-        tokenized_datasets = dataset.map(lambda examples: tokenizer(examples['text'], padding="max_length", truncation=True, max_length=512), batched=True)
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Tokenization complete'})
-
-        # Define training arguments
-        training_args = TrainingArguments(
-            output_dir='./results',
-            num_train_epochs=task_details['trainingParameters']['numEpochs'],
-            per_device_train_batch_size=task_details['trainingParameters']['batchSize'],
-            per_device_eval_batch_size=task_details['trainingParameters']['batchSize'],
-            warmup_steps=500,
-            weight_decay=0.01,
-            logging_dir='./logs',
-            logging_steps=10,
-        )
-
-        # Initialize the Trainer
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=tokenized_datasets['train'],
-            eval_dataset=tokenized_datasets['validation']
-        )
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Trainer initialized, starting training'})
 
         # Train the model
-        trainer.train()
-        sio.emit('BMAIN: logs', {'taskId':task_details['id'], 'message': 'Training complete'})
+        train_model(model_type, model, tokenizer, train_dataset,
+                    eval_dataset, epochs, batch_size, lr, save_dir)
 
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Training completed'
+        })
 
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        # # Compress the saved model and tokenizer into a folder
+        compressed_file = results_dir + ".tar.gz"
+        # with tarfile.open(compressed_file, "w:gz") as tar:
+        #     tar.add(results_dir, arcname=os.path.basename(results_dir))
 
-        model.save_pretrained(save_dir)
-        tokenizer.save_pretrained(save_dir)
-        sio.emit('BMAIN: logs', {'taskId': task_details['id'], 'message': 'Model and tokenizer saved'})
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Model and tokenizer compressed'
+        })
 
-        # Compress the saved model and tokenizer into a folder
-        compressed_file = results_dir + '.tar.gz'
-        with tarfile.open(compressed_file, 'w:gz') as tar:
-            tar.add(results_dir, arcname=os.path.basename(results_dir))
+        response = upload_file(
+            server_url=SERVER_URL + "/api/file-upload/upload",
+            file_path=compressed_file,
+        )
+        
+        sio.emit('BMAIN: logs', {
+            'taskId': taskId,
+            'message': 'Model and tokenizer uploaded'
+        })
 
-        sio.emit('BMAIN: logs', {'taskId': task_details['id'], 'message': 'Model and tokenizer compressed'})
-
-        # Generate presigned URL
-        response = requests.post(SERVER_URL + '/api/generate/presigned-url', json={'fileType': 'tar.gz', 'fileName': os.path.basename(compressed_file)})
-        presigned_url = response.text
-        if not presigned_url:
-            raise Exception('Failed to get presigned URL')
-
-        # Upload the folder to S3 using the presigned URL
-        with open(compressed_file, 'rb') as f:
-            upload_response = requests.put(presigned_url, data=f)
-        if upload_response.status_code != 200:
-            raise Exception('Failed to upload the model and tokenizer')
-
-        sio.emit('BMAIN: logs', {'taskId': task_details['id'], 'message': 'Model and tokenizer uploaded to S3'})
-
-        # # Notify server with the link to the uploaded folder
-        # uploaded_url = presigned_url.split('?')[0]
-        # requests.post(SERVER_URL + 'api/notify-upload', json={'taskId': task_details['id'], 'url': uploaded_url})
-
-        sio.emit('BMAIN: logs', {'taskId': task_details['id'], 'message': 'Server notified with the upload link'})
+        sio.emit('BMAIN: task_update', {
+            'taskId': taskId,
+            "cid": response['data']['cid'],
+            'message': 'Task completed'
+        })
 
     except Exception as e:
-        sio.emit('BMAIN: execute_error', {'message': str(e), 'taskId': task_details['id'],'nodeId': task_details['nodeId']})
-        sio.emit('error', {'message': str(e), 'taskId': task_details['id'],'nodeId': task_details['nodeId']})
+        sio.emit('BMAIN: execute_error', {
+            'message': str(e),
+            'taskId': taskId,
+        })
+        sio.emit('error', {
+            'message': str(e),
+            'taskId': taskId,
+        })
         print(f"An error occurred during task execution: {str(e)}")
+
+
+task = {'id': 'cm3idv11a0002uswzgt4429uv', 'title': 'GPT2', 'description': 'This model can be fine-tuned using custom datasets to optimize its performance for specific tasks and achieve better accuracy in targeted applications.', 'taskType': 'FINE_TUNE', 'status': 'PENDING', 'userId': 'cm2a02jjs0000zzug21e5caxs', 'aiModelid': 'cm3h1vrgc0000gmvvo9ex6hor', 'trainingData': {'trainingDataUrl': {'sucess': 'Upload successfully', 'data': {'cid': 'bafkreibj5nno2rgnhej2kiqeg6mmk5lkocs5dtvc6jll5tdl6evs4istze'}}, 'validationDataUrl': {'sucess': 'Upload successfully', 'data': {'cid': 'bafkreieudivn5uy6ii4tzpqv2ozxoiohset57jjoz3cbwmgt3762z6hf6u'}}}, 'trainingParameters': {'learningRate': 0.0001, 'batchSize': 16, 'numEpochs': 3, 'optimizer':
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'AdamW', 'lossFunction': 'CrossEntropyLoss'}, 'nodeId': None, 'logs': [], 'createdAt': '2024-11-15T06:53:50.975Z', 'updatedAt': '2024-11-15T06:53:50.975Z', 'aiModel': {'id': 'cm3h1vrgc0000gmvvo9ex6hor', 'modelName': 'GPT2', 'type': 'gpt2', 'url': '', 'configUrl': '', 'otherUrl': {}, 'framework': 'Pytorch', 'version': '1.0', 'userId': 'Admin', 'createdAt': '2024-11-14T08:30:43.642Z', 'updatedAt': '2024-11-14T08:30:43.642Z'}}
+# fine_tune(task)

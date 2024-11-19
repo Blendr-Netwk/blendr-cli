@@ -33,4 +33,5 @@ cache
 blendrenv
 results
 venv/
+.env
 

@@ -1,7 +1,7 @@
 import keyring
 from blendr.config.settings import SERVER_URL
 from blendr.lend.setup import create_linux_user, create_windows_user, revoke_linux_user, revoke_windows_user
-# from blendr.ai.tasks.fine_tune import fine_tune
+from blendr.ai.tasks.fine_tune import fine_tune
 from blendr.initiate_socket.initiate import sio, connect_to_server
 import platform
 
@@ -30,13 +30,20 @@ def listen():
     @sio.on('BMAIN: NEW_TASK')
     def handle_new_task(data):
         print(f"New task received: {data}")
-        # Based on the task type, decide the function to call
-        # if data['taskType'] == 'FINE_TUNE':
-            # try:
-            #     # fine_tune(data)
-            # except Exception as e:
-            #     print(f"An error occurred during task execution: {str(e)}")
-    
+        if data['taskType'] == 'FINE_TUNE':
+            try:
+                fine_tune(data)
+            except Exception as e:
+                print(f"An error occurred during task execution: {str(e)}")
+
+    @sio.on('BMAIN: TASK_UPDATE')
+    def handle_task_update(data):
+        message = data['message']
+        if not message:
+            print("No message provided.")
+            return
+        print(message)
+        
     @sio.on('BMAIN: LEND_GPU')
     def handle_lending(data):
         public_key = data['publicKey']
