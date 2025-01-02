@@ -72,8 +72,8 @@ def fine_tune(task):
 
         # # Compress the saved model and tokenizer into a folder
         compressed_file = results_dir + ".tar.gz"
-        # with tarfile.open(compressed_file, "w:gz") as tar:
-        #     tar.add(results_dir, arcname=os.path.basename(results_dir))
+        with tarfile.open(compressed_file, "w:gz") as tar:
+            tar.add(results_dir, arcname=os.path.basename(results_dir))
 
         sio.emit('BMAIN: logs', {
             'taskId': taskId,
